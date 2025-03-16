@@ -60,5 +60,6 @@ jobs:
             docker pull ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
             docker stop $(docker ps -a -q)
             docker run -d -p 8080:8080 ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+            docker exec -it $(docker ps -q) ./gradlew test
             docker rm $(docker ps --filter=status=exited -q)
             docker image prune -a -f
