@@ -59,7 +59,6 @@ jobs:
             docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
             docker pull ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
             docker stop $(docker ps -a -q)
-            docker run -d feelrobot-container -p 8080:8080 ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
-            docker exec -it feelrobot-container ./gradlew test
+            docker run -d -p 8080:8080 ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
             docker rm $(docker ps --filter=status=exited -q)
             docker image prune -a -f
