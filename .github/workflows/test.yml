@@ -4,11 +4,11 @@
 # documentation.
 # This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
-#
+
 name: Java CI with Gradle
 
 on:
-  push:
+  pull_request:
     branches: [ "feature/*" ]
 
 jobs:
@@ -25,20 +25,32 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: make Application.properties
+        run: |
+          mkdir -p src/main/resources
+          touch src/main/resources/application.properties
+          echo "${{secrets.APPLICATION_PROPERTIES}}" > src/main/resources/application.properties
 
+      - name: login to docker hub
+        run: docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
 
-      # run gradle build with application.properties in ec2 instance
-      # solve the problem of missing gradlew file
-      - name: connect to ec2
+      - name: Make docker image
+        run: docker build --no-cache -f DockerFile -t ${{secrets.DOCKER_USERNAME}}/feelrobot:latest .
+
+      - name: Push docker image
+        run: docker push ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+
+      - name : deploy to ec2
         uses: appleboy/ssh-action@master
         with:
-            host: ${{secrets.AWS_PUBLIC_HOST}}
-            username: ubuntu
-            key: ${{secrets.AWS_PRIVATE_KEY}}
-            script: |
-                echo "connected to ec2"
-                mkdir -p src/main/resources
-                touch src/main/resources/application.properties
-                echo "${{secrets.APPLICATION_PROPERTIES}}" > src/main/resources/application.properties
-                chmod +x gradlew
-                ./gradlew build
+          host: ${{secrets.AWS_PUBLIC_HOST}}
+          username: ec2-user
+          key: ${{secrets.AWS_PRIVATE_KEY}}
+          script: |
+            docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
+            docker pull ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+            docker stop $(docker ps -a -q)
+            docker run -d feelrobot-container -p 8080:8080 ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+            docker exec -it feelrobot-container ./gradlew test
+            docker rm $(docker ps --filter=status=exited -q)
+            docker image prune -a -f
