@@ -1,0 +1,72 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: Java CI with Gradle
+
+on:
+  pull_request:
+    branches: [ "main", "develop", "release" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: connect to ec2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{secrets.AWS_PUBLIC_HOST}}
+          username: ubuntu
+          key: ${{secrets.AWS_PRIVATE_KEY}}
+          script: |
+            echo "connected to ec2"
+
+      - name: make Application.properties
+        run: |
+          mkdir -p src/main/resources
+          touch src/main/resources/application.properties
+          echo "${{secrets.APPLICATION_PROPERTIES}}" > src/main/resources/application.properties
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+
+      - name: authurization gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle Wrapper
+        run: ./gradlew build
+
+      - name: check pwd
+        run: ls -al
+
+      - name: login to docker hub
+        run: docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
+
+      - name: Make docker image
+        run: docker build --no-cache -f DockerFile -t ${{secrets.DOCKER_USERNAME}}/feelrobot:latest .
+
+      - name: Push docker image
+        run: docker push ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+
+      - name : deploy to ec2
+        run: |
+          docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
+          docker pull ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+          docker stop $(docker ps -a -q)
+          docker run -d -p 8080:8080 ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+          docker rm $(docker ps --filter=status=exited -q)
+          docker image prune -a -f
