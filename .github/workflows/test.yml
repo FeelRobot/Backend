@@ -28,14 +28,15 @@ jobs:
 
 
       # run gradle build with application.properties in ec2 instance
+      # solve the problem of missing gradlew file
       - name: connect to ec2
         uses: appleboy/ssh-action@master
         with:
-          host: ${{secrets.AWS_PUBLIC_HOST}}
-          username: ubuntu
-          key: ${{secrets.AWS_PRIVATE_KEY}}
-          script: |
-              echo "connected to ec2"
+            host: ${{secrets.AWS_PUBLIC_HOST}}
+            username: ubuntu
+            key: ${{secrets.AWS_PRIVATE_KEY}}
+            script: |
+                echo "connected to ec2"
                 mkdir -p src/main/resources
                 touch src/main/resources/application.properties
                 echo "${{secrets.APPLICATION_PROPERTIES}}" > src/main/resources/application.properties
