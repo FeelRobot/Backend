@@ -41,7 +41,3 @@ jobs:
                 echo "${{secrets.APPLICATION_PROPERTIES}}" > src/main/resources/application.properties
                 chmod +x gradlew
                 ./gradlew build
-                docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
-                docker build --no-cache -f DockerFile -t ${{secrets.DOCKER_USERNAME}}/prdoit:latest .
-                docker push ${{secrets.DOCKER_USERNAME}}/prdoit:latest
-                echo "deployed to ec2"
