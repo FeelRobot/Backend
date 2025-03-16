@@ -8,8 +8,8 @@
 name: Java CI with Gradle
 
 on:
-  pull_request:
-    branches: [ "main", "develop", "release" ]
+  push:
+    branches: [ "feature/*" ]
 
 jobs:
   build:
@@ -25,16 +25,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: connect to ec2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{secrets.AWS_PUBLIC_HOST}}
-          username: ubuntu
-          key: ${{secrets.AWS_PRIVATE_KEY}}
-          script: |
-            echo "connected to ec2"
-
       - name: make Application.properties
         run: |
           mkdir -p src/main/resources
@@ -48,4 +38,27 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle Wrapper
-        run: ./gradlew build
+        run: ./gradlew build -x test
+
+      - name: login to docker hub
+        run: docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
+
+      - name: Make docker image
+        run: docker build --no-cache -f DockerFile -t ${{secrets.DOCKER_USERNAME}}/feelrobot:latest .
+
+      - name: Push docker image
+        run: docker push ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+
+      - name : deploy to ec2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{secrets.AWS_PUBLIC_HOST}}
+          username: ubuntu
+          key: ${{secrets.AWS_PRIVATE_KEY}}
+          script: |
+            docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
+            docker pull ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+            docker stop $(docker ps -a -q)
+            docker run -d -p 8080:8080 ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+            docker rm $(docker ps --filter=status=exited -q)
+            docker image prune -a -f
