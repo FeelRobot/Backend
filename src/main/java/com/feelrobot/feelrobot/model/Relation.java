@@ -11,18 +11,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Study {
+public class Relation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int studyId;
+    private int relationId;
 
-    private String studyFileName;
-
-    private String difficulty;
+    private String studentId;
 
     @ManyToOne
-    @JoinColumn(name = "chatBotId")
-    private ChatBot chatBotId;
-
+    @JoinColumn(name = "managerId")
+    private User user;
 }

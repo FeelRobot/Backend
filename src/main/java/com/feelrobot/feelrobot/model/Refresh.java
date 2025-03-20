@@ -1,6 +1,9 @@
 package com.feelrobot.feelrobot.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,18 +14,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Study {
+public class Refresh {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int studyId;
+    private int refreshId;
 
-    private String studyFileName;
+    private String token;
 
-    private String difficulty;
-
-    @ManyToOne
-    @JoinColumn(name = "chatBotId")
-    private ChatBot chatBotId;
-
+    private String userId;
 }
