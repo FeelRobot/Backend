@@ -130,7 +130,7 @@ public class SignServiceImpl implements SignService {
             throw new ResponseException("카카오 로그인에 실패했습니다.", 500);
         }
     }
-
+/////
     @Override
     public void kakaoGetToken(String code) throws ResponseException {
         log.info("[SignServiceImpl] 카카오 토큰 요청");
