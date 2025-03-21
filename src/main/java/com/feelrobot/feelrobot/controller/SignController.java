@@ -85,4 +85,34 @@ public class SignController {
         }
     }
 
+    @GetMapping("/kakao")
+    public ResponseEntity<Object> kakaoLogin() {
+        log.info("[SignController] 카카오 로그인 요청");
+        try{
+            signService.kakaoLogin();
+            return ResponseEntity.status(HttpStatus.OK).body("카카오 로그인에 성공했습니다.");
+        } catch (ResponseException e) {
+            log.error(e.getMessage());
+            return ResponseEntity.status(e.getResultCode()).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("[SignController] 카카오 로그인 실패");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("카카오 로그인에 실패했습니다.");
+        }
+    }
+
+    @GetMapping("/kakao/callback/")
+    public ResponseEntity<Object> kakaoLoginCallback(@RequestParam("code") String code) {
+        log.info("[SignController] 카카오 로그인 콜백 요청");
+        try{
+            signService.kakaoGetToken(code);
+            return ResponseEntity.status(HttpStatus.OK).body("success");
+        } catch (ResponseException e) {
+            log.error(e.getMessage());
+            return ResponseEntity.status(e.getResultCode()).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("[SignController] 카카오 로그인 콜백 실패");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("카카오 로그인 콜백에 실패했습니다.");
+        }
+    }
+
 }

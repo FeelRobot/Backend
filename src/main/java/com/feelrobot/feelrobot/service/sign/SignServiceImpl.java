@@ -1,10 +1,8 @@
 package com.feelrobot.feelrobot.service.sign;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.feelrobot.feelrobot.config.JwtTokenProvider;
-import com.feelrobot.feelrobot.dto.sign.LoginRequestDto;
-import com.feelrobot.feelrobot.dto.sign.LoginResponseDto;
-import com.feelrobot.feelrobot.dto.sign.RefreshDto;
-import com.feelrobot.feelrobot.dto.sign.RegisterDto;
+import com.feelrobot.feelrobot.dto.sign.*;
 import com.feelrobot.feelrobot.exception.RegisterDuplicationException;
 import com.feelrobot.feelrobot.exception.ResponseException;
 import com.feelrobot.feelrobot.model.Refresh;
@@ -13,8 +11,15 @@ import com.feelrobot.feelrobot.repository.RefreshRepository;
 import com.feelrobot.feelrobot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
+
 
 @Service
 @Slf4j
@@ -25,6 +30,12 @@ public class SignServiceImpl implements SignService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshRepository refreshRepository;
+
+    @Value("${kakao.login.key}")
+    private String clientId;
+
+    @Value("${kakao.login.redirect.uri}")
+    private String redirectUri;
 
     @Override
     public void register(RegisterDto registerDto) throws RegisterDuplicationException, ResponseException {
@@ -106,4 +117,46 @@ public class SignServiceImpl implements SignService {
         return jwtTokenProvider.createAccessToken(refresh.getUserId());
     }
 
+    @Override
+    public void kakaoLogin() throws ResponseException {
+        log.info("[SignServiceImpl] 카카오 로그인 요청");
+
+        String url = "https://kauth.kakao.com/oauth/authorize?client_id=" + clientId + "&redirect_uri=" + redirectUri + "&response_type=code";
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            restTemplate.getForObject(url, String.class);
+        } catch (Exception e) {
+            log.error("[SignServiceImpl] 카카오 로그인 실패");
+            throw new ResponseException("카카오 로그인에 실패했습니다.", 500);
+        }
+    }
+
+    @Override
+    public void kakaoGetToken(String code) throws ResponseException {
+        log.info("[SignServiceImpl] 카카오 토큰 요청");
+
+        String url = "https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=" + clientId + "&redirect_uri=" + redirectUri + "&code=" + code;
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+
+            KakaoRequestDto kakaoRequestDto= KakaoRequestDto.builder()
+                    .grant_type("authorization_code")
+                    .client_id(clientId)
+                    .redirect_uri(redirectUri)
+                    .code(code)
+                    .build();
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map map = objectMapper.convertValue(kakaoRequestDto, Map.class);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(map, headers);
+            RestTemplate restTemplate = new RestTemplate();
+            KakaoResponseDto kakaoResponseDto = restTemplate.postForObject(url, request, KakaoResponseDto.class);
+            log.info(kakaoResponseDto.getId_token());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ResponseException("카카오 토큰 요청에 실패했습니다.", 500);
+        }
+    }
 }
