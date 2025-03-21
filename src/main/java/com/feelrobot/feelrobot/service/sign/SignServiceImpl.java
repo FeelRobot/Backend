@@ -3,6 +3,7 @@ package com.feelrobot.feelrobot.service.sign;
 import com.feelrobot.feelrobot.config.JwtTokenProvider;
 import com.feelrobot.feelrobot.dto.sign.LoginRequestDto;
 import com.feelrobot.feelrobot.dto.sign.LoginResponseDto;
+import com.feelrobot.feelrobot.dto.sign.RefreshDto;
 import com.feelrobot.feelrobot.dto.sign.RegisterDto;
 import com.feelrobot.feelrobot.exception.RegisterDuplicationException;
 import com.feelrobot.feelrobot.exception.ResponseException;
@@ -71,11 +72,38 @@ public class SignServiceImpl implements SignService {
                 .userId(user.getId())
                 .token(refreshToken)
                 .build();
+        refreshRepository.save(refresh);
 
         return LoginResponseDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    @Override
+    public void logout(String refreshToken) throws ResponseException {
+        log.info("[SignServiceImpl] 로그아웃 요청");
+
+        if(!jwtTokenProvider.validationToken(refreshToken)){
+            throw new ResponseException("유효하지 않은 토큰입니다.", 400);
+        }
+        Refresh refresh = refreshRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new ResponseException("존재하지 않는 토큰입니다.", 400));
+        refreshRepository.deleteByToken(refreshToken);
+    }
+
+    @Override
+    public String refreshToken(RefreshDto refreshDto) throws ResponseException {
+        log.info("[SignServiceImpl] 토큰 재발급 요청");
+
+        Refresh refresh = refreshRepository.findByToken(refreshDto.getRefreshToken())
+                .orElseThrow(() -> new ResponseException("존재하지 않는 토큰입니다.", 400));
+
+        if(!jwtTokenProvider.validationToken(refreshDto.getRefreshToken())){
+            throw new ResponseException("유효하지 않은 토큰입니다.", 400);
+        }
+
+        return jwtTokenProvider.createAccessToken(refresh.getUserId());
     }
 
 }

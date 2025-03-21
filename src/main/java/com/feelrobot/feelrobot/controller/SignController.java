@@ -1,6 +1,7 @@
 package com.feelrobot.feelrobot.controller;
 
 import com.feelrobot.feelrobot.dto.sign.LoginRequestDto;
+import com.feelrobot.feelrobot.dto.sign.RefreshDto;
 import com.feelrobot.feelrobot.dto.sign.RegisterDto;
 import com.feelrobot.feelrobot.exception.RegisterDuplicationException;
 import com.feelrobot.feelrobot.exception.ResponseException;
@@ -11,10 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -58,5 +56,33 @@ public class SignController {
         }
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Object> logout(@RequestBody String refreshToken) {
+        log.info("[SignController] 로그아웃 요청");
+        try{
+            signService.logout(refreshToken);
+            return ResponseEntity.status(HttpStatus.OK).body("로그아웃에 성공했습니다.");
+        } catch (ResponseException e) {
+            log.error(e.getMessage());
+            return ResponseEntity.status(e.getResultCode()).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("[SignController] 로그아웃 실패");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("로그아웃에 실패했습니다.");
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<Object> refreshToken(@RequestBody RefreshDto refreshDto) {
+        log.info("[SignController] 토큰 재발급 요청");
+        try{
+            return ResponseEntity.status(HttpStatus.OK).body(signService.refreshToken(refreshDto));
+        } catch (ResponseException e) {
+            log.error(e.getMessage());
+            return ResponseEntity.status(e.getResultCode()).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("[SignController] 토큰 재발급 실패");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("토큰 재발급에 실패했습니다.");
+        }
+    }
 
 }
