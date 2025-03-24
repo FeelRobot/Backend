@@ -134,7 +134,7 @@ public class SignServiceImpl implements SignService {
 
         return jwtTokenProvider.createAccessToken(refresh.getUserId());
     }
-
+////
     @Override
     public LoginResponseDto kakaoGetToken(String code) throws ResponseException {
         log.info("[SignServiceImpl] 카카오 토큰 요청");
@@ -144,10 +144,9 @@ public class SignServiceImpl implements SignService {
         try {
             WebClient webClient = WebClient.builder()
                     .baseUrl(url)
-                    .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE) // ✅ Content-Type 설정
+                    .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                     .build();
 
-            // ✅ MultiValueMap을 사용하여 application/x-www-form-urlencoded 방식으로 변환
             MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
             formData.add("grant_type", "authorization_code");
             formData.add("client_id", clientId);
