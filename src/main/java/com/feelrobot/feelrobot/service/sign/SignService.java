@@ -19,4 +19,7 @@ public interface SignService {
     void kakaoLogin() throws ResponseException;
 
     void kakaoGetToken(String code) throws ResponseException;
+
+//    void checkId(String id) throws ResponseException;
+
 }

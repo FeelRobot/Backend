@@ -17,6 +17,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
@@ -135,25 +137,24 @@ public class SignServiceImpl implements SignService {
     public void kakaoGetToken(String code) throws ResponseException {
         log.info("[SignServiceImpl] 카카오 토큰 요청");
 
-        String url = "https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=" + clientId + "&redirect_uri=" + redirectUri + "&code=" + code;
+        String url = "https://kauth.kakao.com/oauth/token";
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+            WebClient webClient = WebClient.create(url);
 
-            KakaoRequestDto kakaoRequestDto= KakaoRequestDto.builder()
-                    .grant_type("authorization_code")
-                    .client_id(clientId)
-                    .redirect_uri(redirectUri)
-                    .code(code)
-                    .build();
+            Mono<String> response = webClient.post()
+                    .uri(url)
+                    .bodyValue(KakaoRequestDto.builder()
+                            .grant_type("authorization_code")
+                            .client_id(clientId)
+                            .redirect_uri(redirectUri)
+                            .code(code)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .doOnNext(body -> log.info("[kakaoGetToken] body = {}", body))
+                    .doOnError(error -> log.error("[kakaoGetToken] error = {}", error.getMessage()));
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            Map map = objectMapper.convertValue(kakaoRequestDto, Map.class);
 
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(map, headers);
-            RestTemplate restTemplate = new RestTemplate();
-            KakaoResponseDto kakaoResponseDto = restTemplate.postForObject(url, request, KakaoResponseDto.class);
-            log.info(kakaoResponseDto.getId_token());
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ResponseException("카카오 토큰 요청에 실패했습니다.", 500);
