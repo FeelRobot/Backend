@@ -47,6 +47,8 @@ dependencies {
 	// jwt
 	implementation 'io.jsonwebtoken:jjwt:0.9.1'
 	implementation 'javax.xml.bind:jaxb-api:2.3.1'
+	implementation 'com.nimbusds:nimbus-jose-jwt:9.31'
+
 }
 
 tasks.named('test') {

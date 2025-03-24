@@ -11,22 +11,26 @@ import com.feelrobot.feelrobot.model.User;
 import com.feelrobot.feelrobot.repository.CertificationRepository;
 import com.feelrobot.feelrobot.repository.RefreshRepository;
 import com.feelrobot.feelrobot.repository.UserRepository;
+import com.nimbusds.jose.JWSObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
-
 
 @Service
 @Slf4j
@@ -48,8 +52,7 @@ public class SignServiceImpl implements SignService {
     private String redirectUri;
 
     public static int createNumber() {
-        int number = (int) (Math.random() * 1000000);
-        return number;
+        return (int) (Math.random() * 1000000);
     }
 
     @Override
@@ -133,46 +136,65 @@ public class SignServiceImpl implements SignService {
     }
 
     @Override
-    public void kakaoLogin() throws ResponseException {
-        log.info("[SignServiceImpl] 카카오 로그인 요청");
-
-        String url = "https://kauth.kakao.com/oauth/authorize?client_id=" + clientId + "&redirect_uri=" + redirectUri + "&response_type=code";
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-            restTemplate.getForObject(url, String.class);
-        } catch (Exception e) {
-            log.error("[SignServiceImpl] 카카오 로그인 실패");
-            throw new ResponseException("카카오 로그인에 실패했습니다.", 500);
-        }
-    }
-/////
-    @Override
-    public void kakaoGetToken(String code) throws ResponseException {
+    public LoginResponseDto kakaoGetToken(String code) throws ResponseException {
         log.info("[SignServiceImpl] 카카오 토큰 요청");
 
         String url = "https://kauth.kakao.com/oauth/token";
+
         try {
-            WebClient webClient = WebClient.create(url);
+            WebClient webClient = WebClient.builder()
+                    .baseUrl(url)
+                    .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE) // ✅ Content-Type 설정
+                    .build();
+
+            // ✅ MultiValueMap을 사용하여 application/x-www-form-urlencoded 방식으로 변환
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("grant_type", "authorization_code");
+            formData.add("client_id", clientId);
+            formData.add("redirect_uri", redirectUri);
+            formData.add("code", code);
 
             Mono<String> response = webClient.post()
-                    .uri(url)
-                    .bodyValue(KakaoRequestDto.builder()
-                            .grant_type("authorization_code")
-                            .client_id(clientId)
-                            .redirect_uri(redirectUri)
-                            .code(code)
-                            .build())
+                    .body(BodyInserters.fromFormData(formData))
                     .retrieve()
                     .bodyToMono(String.class)
-                    .doOnNext(body -> log.info("[kakaoGetToken] body = {}", body))
+                    .doOnNext(body -> log.info("[kakaoGetToken] response body = {}", body))
                     .doOnError(error -> log.error("[kakaoGetToken] error = {}", error.getMessage()));
 
+            KakaoResponseDto kakaoResponseDto = new ObjectMapper().readValue(response.block(), KakaoResponseDto.class);
+            String idToken = kakaoResponseDto.getId_token();
 
+            String email = extractEmailFromToken(idToken);
+
+            boolean isExistUser = userRepository.existsById(email);
+            if(isExistUser){
+                String accessToken = jwtTokenProvider.createAccessToken(email);
+                String refreshToken = jwtTokenProvider.createRefreshToken();
+
+
+                Refresh refresh = Refresh.builder()
+                        .userId(email)
+                        .token(refreshToken)
+                        .build();
+                refreshRepository.save(refresh);
+
+                return LoginResponseDto.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .build();
+            }
+            else {
+                return LoginResponseDto.builder()
+                        .accessToken(email)
+                        .refreshToken("none")
+                        .build();
+            }
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ResponseException("카카오 토큰 요청에 실패했습니다.", 500);
         }
     }
+
 
     @Override
     public void checkId(String id) throws ResponseException {
@@ -238,5 +260,16 @@ public class SignServiceImpl implements SignService {
         }
     }
 
+    private String extractEmailFromToken(String idToken) throws ResponseException {
+        try{
+            JWSObject jwsObject = JWSObject.parse(idToken);
+            Map<String, Object> claims = jwsObject.getPayload().toJSONObject();
+
+            return (String) claims.get("email");
+        } catch (ParseException e){
+            log.error("[SignServiceImpl] 토큰 파싱 실패");
+            throw new ResponseException("토큰 파싱에 실패했습니다.", 500);
+        }
+    }
 
 }
