@@ -5,8 +5,10 @@ import com.feelrobot.feelrobot.config.JwtTokenProvider;
 import com.feelrobot.feelrobot.dto.sign.*;
 import com.feelrobot.feelrobot.exception.RegisterDuplicationException;
 import com.feelrobot.feelrobot.exception.ResponseException;
+import com.feelrobot.feelrobot.model.Certification;
 import com.feelrobot.feelrobot.model.Refresh;
 import com.feelrobot.feelrobot.model.User;
+import com.feelrobot.feelrobot.repository.CertificationRepository;
 import com.feelrobot.feelrobot.repository.RefreshRepository;
 import com.feelrobot.feelrobot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,12 +16,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -32,12 +37,20 @@ public class SignServiceImpl implements SignService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshRepository refreshRepository;
+    private final JavaMailSender javaMailSender;
+    private static final String sender = "taehun8765@gmail.com";
+    private final CertificationRepository certificationRepository;
 
     @Value("${kakao.login.key}")
     private String clientId;
 
     @Value("${kakao.login.redirect.uri}")
     private String redirectUri;
+
+    public static int createNumber() {
+        int number = (int) (Math.random() * 1000000);
+        return number;
+    }
 
     @Override
     public void register(RegisterDto registerDto) throws RegisterDuplicationException, ResponseException {
@@ -160,4 +173,70 @@ public class SignServiceImpl implements SignService {
             throw new ResponseException("카카오 토큰 요청에 실패했습니다.", 500);
         }
     }
+
+    @Override
+    public void checkId(String id) throws ResponseException {
+        log.info("[SignServiceImpl] 아이디 중복 확인 요청");
+
+        boolean isExistUser = userRepository.existsById(id);
+        if(isExistUser){
+            throw new ResponseException("이미 존재하는 아이디입니다.", 400);
+        }
+    }
+
+    @Override
+    public SimpleMailMessage createMail(String email, int number) throws ResponseException {
+        log.info("[SignServiceImpl] 이메일 생성 요청");
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setFrom(sender);
+            message.setSubject("인증번호 발송");
+            createNumber();
+            message.setText("인증번호는 " + number + "입니다.");
+            return message;
+        } catch (RuntimeException e) {
+            log.error("[SignServiceImpl] 이메일 생성 실패");
+            throw new ResponseException("이메일 생성에 실패했습니다.", 500);
+        }
+    }
+
+    @Override
+    public int sendMail(MailDto mail) throws ResponseException {
+        log.info("[SignServiceImpl] 메일 전송 요청");
+        try {
+            int number = createNumber();
+            log.info("[SignServiceImpl] mail = {}", mail.getEmail());
+            SimpleMailMessage message = createMail(mail.getEmail(), number);
+            javaMailSender.send(message);
+
+            Certification certification = Certification.builder()
+                    .certificationEmail(mail.getEmail())
+                    .certificationNumber(number)
+                    .build();
+
+            certificationRepository.save(certification);
+            return number;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ResponseException("메일 전송에 실패했습니다.", 500);
+        }
+    }
+
+    @Override
+    public boolean checkEmail(String email, int number) throws ResponseException {
+        List<Certification> certificationList = certificationRepository.findAllByCertificationEmail(email);
+        Certification certification = certificationList.get(certificationList.size() - 1);
+        try {
+            int code = certification.getCertificationNumber();
+            if(code == number){
+                return true;
+            }
+            throw new ResponseException("인증번호가 일치하지 않습니다.", 400);
+        } catch (Exception e) {
+            throw new ResponseException("인증번호 확인 중 문제가 발생했습니다.", 500);
+        }
+    }
+
+
 }
