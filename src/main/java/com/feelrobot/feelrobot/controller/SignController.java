@@ -99,7 +99,8 @@ public class SignController {
         headers.add("Content-Type", "application/json; charset=UTF-8");
         try{
             LoginResponseDto loginResponseDto = signService.kakaoGetToken(code);
-            return new ResponseEntity<>(loginResponseDto, headers, HttpStatus.OK);
+            headers.add("Location", "feelobot://kakao?accessToken=" + loginResponseDto.getAccessToken() + "&refreshToken=" + loginResponseDto.getRefreshToken());
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
         } catch (ResponseException e) {
             log.error(e.getMessage());
             return new ResponseEntity<>(e.getMessage(), headers, e.getResultCode());
