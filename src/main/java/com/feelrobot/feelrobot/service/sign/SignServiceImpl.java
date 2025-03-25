@@ -51,6 +51,9 @@ public class SignServiceImpl implements SignService {
     @Value("${kakao.login.redirect.uri}")
     private String redirectUri;
 
+    @Value("${kakao.login.secret}")
+    private String secret;
+
     public static int createNumber() {
         return (int) (Math.random() * 1000000);
     }
@@ -151,6 +154,7 @@ public class SignServiceImpl implements SignService {
             formData.add("grant_type", "authorization_code");
             formData.add("client_id", clientId);
             formData.add("redirect_uri", redirectUri);
+            formData.add("client_secret", secret);
             formData.add("code", code);
 
             Mono<String> response = webClient.post()
