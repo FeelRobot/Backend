@@ -18,7 +18,7 @@ public class JwtTokenProvider {
     public static final String ACCESS = "access";
     public static final String REFRESH = "refresh";
     public static final String TOKEN_TYPE = "tokenType";
-    public static final String TOKEN_HEADER = "Auth-Token";
+    public static final String TOKEN_HEADER = "Authorization";
 
 
     @Value("${jwt.key}")

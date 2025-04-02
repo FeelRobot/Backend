@@ -1,5 +1,7 @@
 package com.feelrobot.feelrobot.service.user;
 
+import com.feelrobot.feelrobot.dto.user.ManagerResponseDto;
+import com.feelrobot.feelrobot.dto.user.StudentResponseDto;
 import com.feelrobot.feelrobot.dto.user.SurveyResponseDto;
 import com.feelrobot.feelrobot.exception.ResponseException;
 import com.feelrobot.feelrobot.model.Survey;
@@ -23,10 +25,12 @@ public class UserServiceImpl implements UserService {
     public void saveSurvey(SurveyResponseDto surveyResponseDto) throws ResponseException {
         log.info("[UserServiceImpl] saveSurvey");
 
-        User user = userRepository.findById(surveyResponseDto.getUserId()).orElseThrow(() -> new IllegalArgumentException("user not found"));
+        User user = userRepository.findById(surveyResponseDto.getUserId()).orElseThrow(() -> new ResponseException("user not found", 400));
         if(user.getSurvey() != null) {
             throw new ResponseException("이미 설문조사를 완료하였습니다.", 400);
         }
+
+        User manager = userRepository.findById(surveyResponseDto.getManagerId()).orElseThrow(() -> new ResponseException("manager not found", 400));
 
         try {
             Survey survey = Survey.builder()
@@ -43,5 +47,26 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public Object getInfo(String userId) throws ResponseException {
+        log.info("[UserServiceImpl] getInfo");
 
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResponseException("user not found", 400));
+        if(user.getRole() == 0){
+            return StudentResponseDto.builder()
+                    .userId(user.getId())
+                    .email(user.getEmail())
+                    .name(user.getName())
+                    .birth(user.getSurvey().getBirth())
+                    .sex(user.getSurvey().getSex())
+                    .managerId(user.getSurvey().getManagerId())
+                    .build();
+        } else {
+            return ManagerResponseDto.builder()
+                    .userId(user.getId())
+                    .email(user.getEmail())
+                    .name(user.getName())
+                    .build();
+        }
+    }
 }
