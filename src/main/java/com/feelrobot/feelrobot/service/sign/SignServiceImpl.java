@@ -157,14 +157,10 @@ public class SignServiceImpl implements SignService {
             formData.add("client_secret", secret);
             formData.add("code", code);
 
-            log.info("[kakaoGetToken] formData = {}", formData);
-
             Mono<String> response = webClient.post()
                     .body(BodyInserters.fromFormData(formData))
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .doOnNext(body -> log.info("[kakaoGetToken] response body = {}", body))
-                    .doOnError(error -> log.error("[kakaoGetToken] error = {}", error.getMessage()));
+                    .bodyToMono(String.class);
 
             KakaoResponseDto kakaoResponseDto = new ObjectMapper().readValue(response.block(), KakaoResponseDto.class);
             String idToken = kakaoResponseDto.getId_token();
