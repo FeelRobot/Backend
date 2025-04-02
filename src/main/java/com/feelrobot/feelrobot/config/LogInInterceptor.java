@@ -40,6 +40,10 @@ public class LogInInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        String userId = jwtTokenProvider.getUserId(token);
+        request.setAttribute("userId", userId);
+        log.info("[LogInInterceptor] userId : {}", userId);
+
         return true;
     }
 

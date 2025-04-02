@@ -1,5 +1,7 @@
 package com.feelrobot.feelrobot.service.user;
 
+import com.feelrobot.feelrobot.dto.user.ManagerResponseDto;
+import com.feelrobot.feelrobot.dto.user.StudentResponseDto;
 import com.feelrobot.feelrobot.dto.user.SurveyResponseDto;
 import com.feelrobot.feelrobot.exception.ResponseException;
 import com.feelrobot.feelrobot.model.Survey;
@@ -42,6 +44,29 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             log.error("[UserServiceImpl] saveSurvey error");
             throw new IllegalArgumentException("save survey error");
+        }
+    }
+
+    @Override
+    public Object getInfo(String userId) throws ResponseException {
+        log.info("[UserServiceImpl] getInfo");
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResponseException("user not found", 400));
+        if(user.getRole() == 0){
+            return StudentResponseDto.builder()
+                    .userId(user.getId())
+                    .email(user.getEmail())
+                    .name(user.getName())
+                    .birth(user.getSurvey().getBirth())
+                    .sex(user.getSurvey().getSex())
+                    .managerId(user.getSurvey().getManagerId())
+                    .build();
+        } else {
+            return ManagerResponseDto.builder()
+                    .userId(user.getId())
+                    .email(user.getEmail())
+                    .name(user.getName())
+                    .build();
         }
     }
 }
