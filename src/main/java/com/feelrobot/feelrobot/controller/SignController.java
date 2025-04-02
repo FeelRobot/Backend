@@ -1,9 +1,6 @@
 package com.feelrobot.feelrobot.controller;
 
-import com.feelrobot.feelrobot.dto.sign.LoginRequestDto;
-import com.feelrobot.feelrobot.dto.sign.MailDto;
-import com.feelrobot.feelrobot.dto.sign.RefreshDto;
-import com.feelrobot.feelrobot.dto.sign.RegisterDto;
+import com.feelrobot.feelrobot.dto.sign.*;
 import com.feelrobot.feelrobot.exception.RegisterDuplicationException;
 import com.feelrobot.feelrobot.exception.ResponseException;
 import com.feelrobot.feelrobot.service.sign.SignService;
@@ -95,31 +92,20 @@ public class SignController {
         }
     }
 
-    @GetMapping("/kakao")
-    public ResponseEntity<Object> kakaoLogin() {
-        log.info("[SignController] 카카오 로그인 요청");
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Type", "application/json; charset=UTF-8");
-        try{
-            signService.kakaoLogin();
-            return new ResponseEntity<>("로그인 성공", headers, HttpStatus.OK);
-        } catch (ResponseException e) {
-            log.error(e.getMessage());
-            return new ResponseEntity<>(e.getMessage(), headers, e.getResultCode());
-        } catch (Exception e) {
-            log.error("[SignController] 카카오 로그인 실패");
-            return new ResponseEntity<>("kakao login error", headers, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
     @GetMapping("/kakao/callback")
     public ResponseEntity<Object> kakaoLoginCallback(@RequestParam("code") String code) {
         log.info("[SignController] 카카오 로그인 콜백 요청");
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Type", "application/json; charset=UTF-8");
         try{
-            signService.kakaoGetToken(code);
-            return new ResponseEntity<>("kakao login callback success", headers, HttpStatus.OK);
+            LoginResponseDto loginResponseDto = signService.kakaoGetToken(code);
+            //loginResponseDto의 accessToken이 이메일 형식이라면 headers에 Location의 파라메터로 email을 주기
+            if(loginResponseDto.getAccessToken().contains("@")) {
+                headers.add("Location", "feelobot://kakao?email=" + loginResponseDto.getAccessToken());
+                return new ResponseEntity<>(headers, HttpStatus.FOUND);
+            }
+            headers.add("Location", "feelobot://kakao?accessToken=" + loginResponseDto.getAccessToken() + "&refreshToken=" + loginResponseDto.getRefreshToken());
+            return new ResponseEntity<>(headers, HttpStatus.FOUND);
         } catch (ResponseException e) {
             log.error(e.getMessage());
             return new ResponseEntity<>(e.getMessage(), headers, e.getResultCode());
