@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+
 @Controller
 @RequiredArgsConstructor
 @Slf4j
@@ -100,7 +102,7 @@ public class SignController {
         try{
             LoginResponseDto loginResponseDto = signService.kakaoGetToken(code);
             //loginResponseDto의 accessToken이 이메일 형식이라면 headers에 Location의 파라메터로 email을 주기
-            if(loginResponseDto.getAccessToken().contains("@")) {
+            if(Objects.equals(loginResponseDto.getRefreshToken(), "none")) {
                 headers.add("Location", "feelobot://kakao?email=" + loginResponseDto.getAccessToken());
                 return new ResponseEntity<>(headers, HttpStatus.FOUND);
             }
