@@ -23,10 +23,12 @@ public class UserServiceImpl implements UserService {
     public void saveSurvey(SurveyResponseDto surveyResponseDto) throws ResponseException {
         log.info("[UserServiceImpl] saveSurvey");
 
-        User user = userRepository.findById(surveyResponseDto.getUserId()).orElseThrow(() -> new IllegalArgumentException("user not found"));
+        User user = userRepository.findById(surveyResponseDto.getUserId()).orElseThrow(() -> new ResponseException("user not found", 400));
         if(user.getSurvey() != null) {
             throw new ResponseException("이미 설문조사를 완료하였습니다.", 400);
         }
+
+        User manager = userRepository.findById(surveyResponseDto.getManagerId()).orElseThrow(() -> new ResponseException("manager not found", 400));
 
         try {
             Survey survey = Survey.builder()
@@ -42,6 +44,4 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("save survey error");
         }
     }
-
-
 }
