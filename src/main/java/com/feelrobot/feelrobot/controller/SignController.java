@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -165,6 +166,82 @@ public class SignController {
         } catch (Exception e) {
             log.error("[SignController] 이메일 인증 실패");
             return new ResponseEntity<>("check email error", headers, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/exist/{email}")
+    public ResponseEntity<Object> existEmail(@PathVariable String email){
+        log.info("[SignController] 이메일 존재 여부 확인 요청");
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", "application/json; charset=UTF-8");
+        try{
+            boolean exist = signService.existId(email);
+            if(exist){
+                return new ResponseEntity<>("인증번호가 전송되었습니다.", headers, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("이메일이 존재하지 않습니다.", headers, HttpStatus.BAD_REQUEST);
+            }
+        } catch (ResponseException e) {
+            log.error(e.getMessage());
+            return new ResponseEntity<>(e.getMessage(), headers, e.getResultCode());
+        } catch (Exception e) {
+            log.error("[SignController] 이메일 존재 여부 확인 실패");
+            return new ResponseEntity<>("exist email error", headers, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/find/{email}")
+    public ResponseEntity<Object> findId(@PathVariable String email){
+        log.info("[SignController] 아이디 찾기 요청");
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", "application/json; charset=UTF-8");
+        try{
+            String id = "{\"id\" : \"" + signService.findId(email) + "\"}";
+            return new ResponseEntity<>(id, headers, HttpStatus.OK);
+        } catch (ResponseException e) {
+            log.error(e.getMessage());
+            return new ResponseEntity<>(e.getMessage(), headers, e.getResultCode());
+        } catch (Exception e) {
+            log.error("[SignController] 아이디 찾기 실패");
+            return new ResponseEntity<>("find id error", headers, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/check")
+    public ResponseEntity<Object> isCorrectId(@RequestParam String id, @RequestParam String email){
+        log.info("[SignController] 아이디 확인 요청");
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", "application/json; charset=UTF-8");
+        try{
+            boolean isCorrect = signService.isCorrectId(id, email);
+            if(isCorrect){
+                return new ResponseEntity<>("인증번호를 전송했습니다.", headers, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("아이디와 이메일이 일치하지 않습니다.", headers, HttpStatus.BAD_REQUEST);
+            }
+        } catch (ResponseException e) {
+            log.error(e.getMessage());
+            return new ResponseEntity<>(e.getMessage(), headers, e.getResultCode());
+        } catch (Exception e) {
+            log.error("[SignController] 아이디 확인 실패");
+            return new ResponseEntity<>("isCorrectId error", headers, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PatchMapping("/update/password")
+    public ResponseEntity<Object> updatePassword(@RequestBody UpdatePasswordDto updatePasswordDto){
+        log.info("[SignController] 비밀번호 변경 요청");
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", "application/json; charset=UTF-8");
+        try{
+            signService.updatePassword(updatePasswordDto.getId(), updatePasswordDto.getPassword());
+            return new ResponseEntity<>("비밀번호 변경 성공", headers, HttpStatus.OK);
+        } catch (ResponseException e) {
+            log.error(e.getMessage());
+            return new ResponseEntity<>(e.getMessage(), headers, e.getResultCode());
+        } catch (Exception e) {
+            log.error("[SignController] 비밀번호 변경 실패");
+            return new ResponseEntity<>("update password error", headers, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
