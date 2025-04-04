@@ -31,5 +31,4 @@ public interface SignService {
     boolean existId(String email) throws ResponseException;
 
     void updatePassword(String id, String password) throws ResponseException;
-
 }

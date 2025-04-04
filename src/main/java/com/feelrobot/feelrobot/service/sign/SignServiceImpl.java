@@ -321,9 +321,10 @@ public class SignServiceImpl implements SignService {
             user.setPassword(passwordEncoder.encode(password));
             userRepository.save(user);
         } catch (Exception e) {
-            log.error("[SignServiceImpl] 비밀번호 변경 실패");
+            log.error("[SignServiceImpl] 비밀번호 변경 실패" + e.getMessage());
             throw new ResponseException("비밀번호 변경에 실패했습니다.", 500);
         }
     }
+
 
 }

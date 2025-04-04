@@ -5,6 +5,7 @@ import com.feelrobot.feelrobot.exception.RegisterDuplicationException;
 import com.feelrobot.feelrobot.exception.ResponseException;
 import com.feelrobot.feelrobot.service.sign.SignService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -244,5 +245,7 @@ public class SignController {
             return new ResponseEntity<>("update password error", headers, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
 
 }
