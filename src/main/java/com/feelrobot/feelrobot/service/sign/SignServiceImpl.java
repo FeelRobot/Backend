@@ -273,4 +273,58 @@ public class SignServiceImpl implements SignService {
         }
     }
 
+    @Override
+    public boolean existId(String email) throws ResponseException {
+        log.info("[SignServiceImpl] 아이디 존재 여부 확인 요청");
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseException("존재하지 않는 이메일입니다.", 400));
+        if(user != null){
+            sendMail(new MailDto(email));
+        }
+
+        return user.getId() != null;
+    }
+
+    @Override
+    public String findId(String email) throws ResponseException {
+        log.info("[SignServiceImpl] 아이디 찾기 요청");
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseException("존재하지 않는 이메일입니다.", 400));
+
+        return user.getId();
+    }
+
+    @Override
+    public boolean isCorrectId(String id, String email) throws ResponseException {
+        log.info("[SignServiceImpl] 아이디 확인 요청");
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+
+        if(user.getEmail().equals(email)){
+            sendMail(new MailDto(email));
+            return true;
+        }
+        throw new ResponseException("아이디와 이메일이 일치하지 않습니다.", 400);
+    }
+
+    @Override
+    public void updatePassword(String id, String password) throws ResponseException {
+        log.info("[SignServiceImpl] 비밀번호 변경 요청");
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+
+        try {
+            user.setPassword(passwordEncoder.encode(password));
+            userRepository.save(user);
+        } catch (Exception e) {
+            log.error("[SignServiceImpl] 비밀번호 변경 실패" + e.getMessage());
+            throw new ResponseException("비밀번호 변경에 실패했습니다.", 500);
+        }
+    }
+
+
 }

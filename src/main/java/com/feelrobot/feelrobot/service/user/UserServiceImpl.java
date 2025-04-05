@@ -10,6 +10,7 @@ import com.feelrobot.feelrobot.repository.SurveyRepository;
 import com.feelrobot.feelrobot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,6 +20,7 @@ public class UserServiceImpl implements UserService {
 
     private final SurveyRepository surveyRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
 
     @Override
@@ -67,6 +69,38 @@ public class UserServiceImpl implements UserService {
                     .email(user.getEmail())
                     .name(user.getName())
                     .build();
+        }
+    }
+
+    @Override
+    public boolean checkPassword(String id,String password) throws ResponseException {
+        log.info("[UserServiceImpl] checkPassword id:" + id + " password:" + password);
+
+        User user = userRepository.findById(id).orElseThrow(() -> new ResponseException("user not found", 400));
+        if(passwordEncoder.matches(password, user.getPassword())) {
+            return true;
+        } else {
+            throw new ResponseException("비밀번호가 일치하지 않습니다.", 400);
+        }
+    }
+
+    @Override
+    public void updateEmail(String id, String email) throws ResponseException {
+        log.info("[SignServiceImpl] 이메일 변경 요청");
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+
+        if(user.getEmail().equals(email)) {
+            throw new ResponseException("변경할 이메일이 현재 이메일과 같습니다.", 400);
+        }
+
+        try {
+            user.setEmail(email);
+            userRepository.save(user);
+        } catch (Exception e) {
+            log.error("[SignServiceImpl] 이메일 변경 실패" + e.getMessage());
+            throw new RuntimeException("이메일 변경에 실패했습니다.", e);
         }
     }
 }

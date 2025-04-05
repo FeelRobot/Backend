@@ -24,4 +24,11 @@ public interface SignService {
 
     boolean checkEmail(String email, int number) throws ResponseException;
 
+    String findId(String email) throws ResponseException;
+
+    boolean isCorrectId(String id, String email) throws ResponseException;
+
+    boolean existId(String email) throws ResponseException;
+
+    void updatePassword(String id, String password) throws ResponseException;
 }
