@@ -61,6 +61,7 @@ public class UserServiceImpl implements UserService {
                     .sex(student.getSex())
                     .email(student.getEmail())
                     .managerId(student.getParent().getParentId())
+                    .name(student.getName())
                     .role(0)
                     .build();
         } else if(parentRepository.findById(userId).isPresent()) {
