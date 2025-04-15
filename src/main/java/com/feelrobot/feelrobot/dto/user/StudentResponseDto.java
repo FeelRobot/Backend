@@ -17,4 +17,5 @@ public class StudentResponseDto {
     private String birth;
     private int sex;
     private String managerId;
+    private int role;
 }

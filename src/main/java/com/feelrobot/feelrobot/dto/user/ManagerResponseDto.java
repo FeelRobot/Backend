@@ -14,5 +14,5 @@ public class ManagerResponseDto {
     private String userId;
     private String email;
     private String name;
-
+    private int role;
 }
