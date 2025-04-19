@@ -158,7 +158,7 @@ public class SignServiceImpl implements SignService {
     }
 
     @Override
-    public String refreshToken(RefreshDto refreshDto) throws ResponseException {
+    public RefreshTokenResponseDto refreshToken(RefreshDto refreshDto) throws ResponseException {
         log.info("[SignServiceImpl] 토큰 재발급 요청");
 
         Refresh refresh = refreshRepository.findByToken(refreshDto.getRefreshToken())
@@ -168,9 +168,11 @@ public class SignServiceImpl implements SignService {
             throw new ResponseException("유효하지 않은 토큰입니다.", 400);
         }
 
-        return jwtTokenProvider.createAccessToken(refresh.getUserId());
+        return RefreshTokenResponseDto.builder()
+                .accessToken(jwtTokenProvider.createAccessToken(refresh.getUserId()))
+                .build();
     }
-////
+
     @Override
     public LoginResponseDto kakaoGetToken(String code) throws ResponseException {
         log.info("[SignServiceImpl] 카카오 토큰 요청");
