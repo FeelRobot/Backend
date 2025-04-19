@@ -12,7 +12,7 @@ public interface SignService {
 
     void logout(String refreshToken) throws ResponseException;
 
-    String refreshToken(RefreshDto refreshDto) throws ResponseException;
+    RefreshTokenResponseDto refreshToken(RefreshDto refreshDto) throws ResponseException;
 
     LoginResponseDto kakaoGetToken(String code) throws ResponseException;
 

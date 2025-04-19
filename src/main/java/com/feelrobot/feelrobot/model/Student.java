@@ -2,7 +2,8 @@ package com.feelrobot.feelrobot.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,19 +14,22 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class User {
+public class Student {
 
     @Id
-    private String id;
+    private String studentId;
 
     private String name;
 
-    private String email;
+    private String birth;
 
     private String password;
 
-    private int role;
+    private int sex;
 
-    @OneToOne(mappedBy = "user")
-    private Survey survey;
+    private String email;
+
+    @ManyToOne
+    @JoinColumn(name = "parent")
+    private Parent parent;
 }

@@ -12,8 +12,13 @@ import lombok.NoArgsConstructor;
 public class SurveyResponseDto {
 
     public String userId;
-    public String brith;
+    public String birth;
     public int sex;
     public String managerId;
+
+    @Override
+    public String toString(){
+        return "SurveyResponseDto{ userId : " + userId +" birth : " + birth + " sex : " + sex + " managerId : " + managerId + "}";
+    }
 
 }

@@ -5,12 +5,8 @@ import com.feelrobot.feelrobot.config.JwtTokenProvider;
 import com.feelrobot.feelrobot.dto.sign.*;
 import com.feelrobot.feelrobot.exception.RegisterDuplicationException;
 import com.feelrobot.feelrobot.exception.ResponseException;
-import com.feelrobot.feelrobot.model.Certification;
-import com.feelrobot.feelrobot.model.Refresh;
-import com.feelrobot.feelrobot.model.User;
-import com.feelrobot.feelrobot.repository.CertificationRepository;
-import com.feelrobot.feelrobot.repository.RefreshRepository;
-import com.feelrobot.feelrobot.repository.UserRepository;
+import com.feelrobot.feelrobot.model.*;
+import com.feelrobot.feelrobot.repository.*;
 import com.nimbusds.jose.JWSObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -37,13 +32,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SignServiceImpl implements SignService {
 
-    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshRepository refreshRepository;
     private final JavaMailSender javaMailSender;
     private static final String sender = "taehun8765@gmail.com";
     private final CertificationRepository certificationRepository;
+    private final StudentRepository studentRepository;
+    private final ParentRepository parentRepository;
 
     @Value("${kakao.login.key}")
     private String clientId;
@@ -62,24 +58,43 @@ public class SignServiceImpl implements SignService {
     public void register(RegisterDto registerDto) throws RegisterDuplicationException, ResponseException {
         log.info("[SignServiceImpl] 회원가입 요청");
 
-        boolean isExistUser = userRepository.existsById(registerDto.getId());
-        boolean isExistEmail = userRepository.existsByEmail(registerDto.getEmail());
-
-        if(isExistUser){
-            throw new RegisterDuplicationException("이미 존재하는 아이디입니다.", 400);
-        }
-        if(isExistEmail){
-            throw new RegisterDuplicationException("이미 존재하는 이메일입니다.", 400);
-        }
         try {
-            User user = User.builder()
-                    .id(registerDto.getId())
-                    .email(registerDto.getEmail())
-                    .password(passwordEncoder.encode(registerDto.getPassword()))
-                    .name(registerDto.getName())
-                    .role(registerDto.getRole())
-                    .build();
-            userRepository.save(user);
+            if(registerDto.getRole() == 0){
+                boolean isExistUser = studentRepository.existsById(registerDto.getId());
+                boolean isExistEmail = studentRepository.existsByEmail(registerDto.getEmail());
+
+                if(isExistUser){
+                    throw new RegisterDuplicationException("이미 존재하는 아이디입니다.", 400);
+                }
+                if(isExistEmail){
+                    throw new RegisterDuplicationException("이미 존재하는 이메일입니다.", 400);
+                }
+                Student student = Student.builder()
+                        .studentId(registerDto.getId())
+                        .email(registerDto.getEmail())
+                        .password(passwordEncoder.encode(registerDto.getPassword()))
+                        .name(registerDto.getName())
+                        .build();
+                studentRepository.save(student);
+            }
+            if(registerDto.getRole() == 1){
+                boolean isExistUser = parentRepository.existsById(registerDto.getId());
+                boolean isExistEmail = parentRepository.existsByEmail(registerDto.getEmail());
+
+                if(isExistUser){
+                    throw new RegisterDuplicationException("이미 존재하는 아이디입니다.", 400);
+                }
+                if(isExistEmail){
+                    throw new RegisterDuplicationException("이미 존재하는 이메일입니다.", 400);
+                }
+                Parent parent = Parent.builder()
+                        .parentId(registerDto.getId())
+                        .email(registerDto.getEmail())
+                        .password(passwordEncoder.encode(registerDto.getPassword()))
+                        .name(registerDto.getName())
+                        .build();
+                parentRepository.save(parent);
+            }
         } catch (Exception e) {
             log.error("[SignServiceImpl] 회원가입 실패");
             throw new ResponseException("회원가입에 실패했습니다.", 500);
@@ -89,27 +104,45 @@ public class SignServiceImpl implements SignService {
     @Override
     public LoginResponseDto login(LoginRequestDto loginRequestDto) throws ResponseException {
         log.info("[SignServiceImpl] 로그인 요청");
+        if(studentRepository.findById(loginRequestDto.getId()).isPresent()){
+            Student student = studentRepository.findById(loginRequestDto.getId())
+                    .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+            if(!passwordEncoder.matches(loginRequestDto.getPassword(), student.getPassword())){
+                throw new ResponseException("비밀번호가 일치하지 않습니다.", 400);
+            }
+            String accessToken = jwtTokenProvider.createAccessToken(student.getStudentId());
+            String refreshToken = jwtTokenProvider.createRefreshToken();
 
-        User user = userRepository.findById(loginRequestDto.getId())
-                .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+            Refresh refresh = Refresh.builder()
+                    .userId(student.getStudentId())
+                    .token(refreshToken)
+                    .build();
+            refreshRepository.save(refresh);
 
-        if(!passwordEncoder.matches(loginRequestDto.getPassword(), user.getPassword())){
-            throw new ResponseException("비밀번호가 일치하지 않습니다.", 400);
+            return LoginResponseDto.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .build();
+        } else if(parentRepository.findById(loginRequestDto.getId()).isPresent()){
+            Parent parent = parentRepository.findById(loginRequestDto.getId())
+                    .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+            if(!passwordEncoder.matches(loginRequestDto.getPassword(), parent.getPassword())){
+                throw new ResponseException("비밀번호가 일치하지 않습니다.", 400);
+            }
+            String accessToken = jwtTokenProvider.createAccessToken(parent.getParentId());
+            String refreshToken = jwtTokenProvider.createRefreshToken();
+            Refresh refresh = Refresh.builder()
+                    .userId(parent.getParentId())
+                    .token(refreshToken)
+                    .build();
+            refreshRepository.save(refresh);
+            return LoginResponseDto.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .build();
+        } else {
+            throw new ResponseException("존재하지 않는 아이디입니다.", 400);
         }
-
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId());
-        String refreshToken = jwtTokenProvider.createRefreshToken();
-
-        Refresh refresh = Refresh.builder()
-                .userId(user.getId())
-                .token(refreshToken)
-                .build();
-        refreshRepository.save(refresh);
-
-        return LoginResponseDto.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
     }
 
     @Override
@@ -125,7 +158,7 @@ public class SignServiceImpl implements SignService {
     }
 
     @Override
-    public String refreshToken(RefreshDto refreshDto) throws ResponseException {
+    public RefreshTokenResponseDto refreshToken(RefreshDto refreshDto) throws ResponseException {
         log.info("[SignServiceImpl] 토큰 재발급 요청");
 
         Refresh refresh = refreshRepository.findByToken(refreshDto.getRefreshToken())
@@ -135,9 +168,11 @@ public class SignServiceImpl implements SignService {
             throw new ResponseException("유효하지 않은 토큰입니다.", 400);
         }
 
-        return jwtTokenProvider.createAccessToken(refresh.getUserId());
+        return RefreshTokenResponseDto.builder()
+                .accessToken(jwtTokenProvider.createAccessToken(refresh.getUserId()))
+                .build();
     }
-////
+
     @Override
     public LoginResponseDto kakaoGetToken(String code) throws ResponseException {
         log.info("[SignServiceImpl] 카카오 토큰 요청");
@@ -167,8 +202,7 @@ public class SignServiceImpl implements SignService {
 
             String email = extractEmailFromToken(idToken);
 
-            boolean isExistUser = userRepository.existsById(email);
-            if(isExistUser){
+            if(studentRepository.existsByEmail(email)){
                 String accessToken = jwtTokenProvider.createAccessToken(email);
                 String refreshToken = jwtTokenProvider.createRefreshToken();
 
@@ -183,8 +217,22 @@ public class SignServiceImpl implements SignService {
                         .accessToken(accessToken)
                         .refreshToken(refreshToken)
                         .build();
-            }
-            else {
+            } else if(parentRepository.existsByEmail(email)){
+                String accessToken = jwtTokenProvider.createAccessToken(email);
+                String refreshToken = jwtTokenProvider.createRefreshToken();
+
+                Refresh refresh = Refresh.builder()
+                        .userId(email)
+                        .token(refreshToken)
+                        .build();
+                refreshRepository.save(refresh);
+
+                return LoginResponseDto.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .build();
+
+            } else {
                 return LoginResponseDto.builder()
                         .accessToken(email)
                         .refreshToken("none")
@@ -201,7 +249,7 @@ public class SignServiceImpl implements SignService {
     public void checkId(String id) throws ResponseException {
         log.info("[SignServiceImpl] 아이디 중복 확인 요청");
 
-        boolean isExistUser = userRepository.existsById(id);
+        boolean isExistUser = studentRepository.existsById(id) || parentRepository.existsById(id);
         if(isExistUser){
             throw new ResponseException("이미 존재하는 아이디입니다.", 400);
         }
@@ -277,54 +325,85 @@ public class SignServiceImpl implements SignService {
     public boolean existId(String email) throws ResponseException {
         log.info("[SignServiceImpl] 아이디 존재 여부 확인 요청");
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseException("존재하지 않는 이메일입니다.", 400));
-        if(user != null){
+        if(studentRepository.findByEmail(email).isPresent()){
+            Student student = studentRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseException("존재하지 않는 이메일입니다.", 400));
             sendMail(new MailDto(email));
+            return true;
+        } else if(parentRepository.findByEmail(email).isPresent()){
+            Parent parent = parentRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseException("존재하지 않는 이메일입니다.", 400));
+            sendMail(new MailDto(email));
+            return true;
+        } else{
+            throw new ResponseException("존재하지 않는 이메일입니다.", 400);
         }
-
-        return user.getId() != null;
     }
 
     @Override
     public String findId(String email) throws ResponseException {
         log.info("[SignServiceImpl] 아이디 찾기 요청");
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseException("존재하지 않는 이메일입니다.", 400));
-
-        return user.getId();
+        if(studentRepository.findByEmail(email).isPresent()){
+            Student student = studentRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseException("존재하지 않는 이메일입니다.", 400));
+            return student.getStudentId();
+        } else if(parentRepository.findByEmail(email).isPresent()){
+            Parent parent = parentRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseException("존재하지 않는 이메일입니다.", 400));
+            return parent.getParentId();
+        } else{
+            throw new ResponseException("존재하지 않는 이메일입니다.", 400);
+        }
     }
 
     @Override
     public boolean isCorrectId(String id, String email) throws ResponseException {
         log.info("[SignServiceImpl] 아이디 확인 요청");
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
-
-        if(user.getEmail().equals(email)){
-            sendMail(new MailDto(email));
-            return true;
+        if(studentRepository.findById(id).isPresent()){
+            Student student = studentRepository.findById(id)
+                    .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+            if(student.getEmail().equals(email)){
+                sendMail(new MailDto(email));
+                return true;
+            } else {
+                throw new ResponseException("아이디와 이메일이 일치하지 않습니다.", 400);
+            }
+        } else if(parentRepository.findById(id).isPresent()){
+            Parent parent = parentRepository.findById(id)
+                    .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+            if(parent.getEmail().equals(email)){
+                sendMail(new MailDto(email));
+                return true;
+            } else {
+                throw new ResponseException("아이디와 이메일이 일치하지 않습니다.", 400);
+            }
+        } else {
+            throw new ResponseException("존재하지 않는 아이디입니다.", 400);
         }
-        throw new ResponseException("아이디와 이메일이 일치하지 않습니다.", 400);
     }
 
     @Override
     public void updatePassword(String id, String password) throws ResponseException {
         log.info("[SignServiceImpl] 비밀번호 변경 요청");
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
-
         try {
-            user.setPassword(passwordEncoder.encode(password));
-            userRepository.save(user);
+            if (studentRepository.findById(id).isPresent()) {
+                Student student = studentRepository.findById(id)
+                        .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+                student.setPassword(passwordEncoder.encode(password));
+                studentRepository.save(student);
+            } else if (parentRepository.findById(id).isPresent()) {
+                Parent parent = parentRepository.findById(id)
+                        .orElseThrow(() -> new ResponseException("존재하지 않는 아이디입니다.", 400));
+                parent.setPassword(passwordEncoder.encode(password));
+                parentRepository.save(parent);
+            } else {
+                throw new ResponseException("존재하지 않는 아이디입니다.", 400);
+            }
         } catch (Exception e) {
-            log.error("[SignServiceImpl] 비밀번호 변경 실패" + e.getMessage());
+            log.error("[SignServiceImpl] 비밀번호 변경 실패");
             throw new ResponseException("비밀번호 변경에 실패했습니다.", 500);
         }
     }
-
-
 }
