@@ -2,6 +2,8 @@ package com.feelrobot.feelrobot.dto.manager;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
@@ -9,6 +11,6 @@ import lombok.*;
 public class StudentResponseDto {
 
     public String studentName;
-    public int studentWeeklyStudyCount;
+    public List<StudyResponseDto> studentStudyList;
 
 }

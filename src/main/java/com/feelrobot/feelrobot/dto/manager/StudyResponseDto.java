@@ -14,6 +14,6 @@ public class StudyResponseDto {
     public int studyId;
     public String chatBotName;
     public String difficulty;
-    public int studyCountPerWeek;
+
 
 }
