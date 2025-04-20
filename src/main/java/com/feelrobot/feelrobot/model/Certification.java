@@ -22,9 +22,4 @@ public class Certification {
 
     private int certificationNumber;
 
-
-    @ManyToOne
-    @JoinColumn(name = "userId")
-    @Nullable
-    private User userId;
 }
