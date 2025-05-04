@@ -62,9 +62,5 @@ jobs:
             chmod 777 /home/ubuntu/answer
             docker stop $(docker ps -a -q)
             docker rm $(docker ps --filter=status=exited -q)
-            docker run -d \
-              -p 8080:8080 \
-              -v /home/ubuntu/answer:/app/answer \
-              --name feelrobot-container \ 
-              ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+            docker run -d -p 8080:8080 -v /home/ubuntu/answer:/app/answer --name feelrobot-container ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
             docker image prune -a -f
