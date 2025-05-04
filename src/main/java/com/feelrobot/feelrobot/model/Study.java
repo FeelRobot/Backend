@@ -23,6 +23,8 @@ public class Study {
     private String difficulty;
     private int chatBotId;
 
+    private boolean isDeleted;
+
     @ManyToOne
     @JoinColumn(name = "studentId")
     private Student student;

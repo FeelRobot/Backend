@@ -15,5 +15,4 @@ public class StudyResponseDto {
     public String chatBotName;
     public String difficulty;
 
-
 }
