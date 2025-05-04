@@ -129,8 +129,6 @@ public class ManagerServiceImpl implements ManagerService{
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode fileRoot = objectMapper.readTree(filePath.toFile());
 
-            JsonNode chatbotNode = fileRoot.get("chatbot");
-
             Map<String, Object> response = new HashMap<>();
             response.put("context", objectMapper.convertValue(fileRoot, new TypeReference<>() {}));
 

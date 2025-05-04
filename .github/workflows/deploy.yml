@@ -58,7 +58,13 @@ jobs:
           script: |
             docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
             docker pull ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
+            mkdir -p /home/ubuntu/answer
+            chmod 777 /home/ubuntu/answer
             docker stop $(docker ps -a -q)
-            docker run -d -p 8080:8080 -v /home/ubuntu/answer:/app/answer ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
             docker rm $(docker ps --filter=status=exited -q)
+            docker run -d \
+              -p 8080:8080 \
+              -v /home/ubuntu/answer:/app/answer \
+              --name feelrobot-container \ 
+              ${{secrets.DOCKER_USERNAME}}/feelrobot:latest
             docker image prune -a -f
