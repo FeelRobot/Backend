@@ -9,5 +9,5 @@ import java.util.List;
 public interface StudentService {
     List<ChatbotResponseDto> getChatbotList(String studentId) throws ResponseException;
 
-    StudyEasyResponseDto startStudyEasy(String studentId, int chatbotId) throws ResponseException;
+    /*StudyEasyResponseDto startStudyEasy(String studentId, int chatbotId) throws ResponseException;*/
 }

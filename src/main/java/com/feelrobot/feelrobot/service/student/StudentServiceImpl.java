@@ -56,7 +56,7 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
-    @Override
+    /*@Override
     public StudyEasyResponseDto startStudyEasy(String studentId, int chatbotId) throws ResponseException {
         log.info("[startStudyEasy] startStudyEasy, input : {}", studentId);
 
@@ -76,6 +76,10 @@ public class StudentServiceImpl implements StudentService {
             chatbotDetail.add("effect", chatBot.getChatBotEffect());
             chatbotDetail.add("tag", chatBot.getChatBotTag().toString());
 
+        } catch (RuntimeException e){
+            log.error("[startStudyEasy] startStudyEasy error {}", e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
-    }
+        return null;
+    }*/
 }
