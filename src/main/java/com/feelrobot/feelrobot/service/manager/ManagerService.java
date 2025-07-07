@@ -14,4 +14,5 @@ public interface ManagerService {
     void deleteStudy(String managerId, int studyId) throws ResponseException;
 
     ResponseDto<Object> getStudyContent(String managerId, int studyId) throws ResponseException;
+
 }

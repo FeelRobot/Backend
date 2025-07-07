@@ -103,8 +103,6 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-
-
     @Override
     public void updateEmail(String id, String email) throws ResponseException {
         log.info("[SignServiceImpl] 이메일 변경 요청");
