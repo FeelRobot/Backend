@@ -1,5 +1,6 @@
 package com.feelrobot.feelrobot.service.manager;
 
+import com.feelrobot.feelrobot.dto.ResponseDto;
 import com.feelrobot.feelrobot.dto.manager.StudentResponseDto;
 import com.feelrobot.feelrobot.exception.ResponseException;
 
@@ -12,5 +13,6 @@ public interface ManagerService {
 
     void deleteStudy(String managerId, int studyId) throws ResponseException;
 
-    Map<String, Object> getStudyContent(String managerId, int studyId) throws ResponseException;
+    ResponseDto<Object> getStudyContent(String managerId, int studyId) throws ResponseException;
+
 }

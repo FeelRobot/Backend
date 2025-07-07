@@ -3,6 +3,7 @@ package com.feelrobot.feelrobot.service.manager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.feelrobot.feelrobot.dto.ResponseDto;
 import com.feelrobot.feelrobot.dto.manager.StudentResponseDto;
 import com.feelrobot.feelrobot.dto.manager.StudyResponseDto;
 import com.feelrobot.feelrobot.exception.ResponseException;
@@ -104,7 +105,7 @@ public class ManagerServiceImpl implements ManagerService{
     }
 
     @Override
-    public Map<String, Object> getStudyContent(String managerId, int studyId) throws ResponseException {
+    public ResponseDto<Object> getStudyContent(String managerId, int studyId) throws ResponseException {
         log.info("[getStudyContent] getStudyContent, input : {}", studyId);
 
         try {
@@ -128,12 +129,15 @@ public class ManagerServiceImpl implements ManagerService{
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode fileRoot = objectMapper.readTree(filePath.toFile());
 
-            JsonNode chatbotNode = fileRoot.get("chatbot");
-
             Map<String, Object> response = new HashMap<>();
             response.put("context", objectMapper.convertValue(fileRoot, new TypeReference<>() {}));
 
-            return response;
+            ResponseDto<Object> responseDto = ResponseDto.builder()
+                    .HttpStatus(200)
+                    .data(response)
+                    .build();
+
+            return responseDto;
 
         } catch (ResponseException e) {
             log.error("[getStudyContent] getStudyContent error {}", e.getMessage());

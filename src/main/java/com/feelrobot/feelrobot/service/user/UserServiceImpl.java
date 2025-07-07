@@ -79,7 +79,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean checkPassword(String id,String password) throws ResponseException {
+    public boolean checkPassword(String id, String password) throws ResponseException {
         log.info("[UserServiceImpl] checkPassword id:" + id + " password:" + password);
 
         if(studentRepository.findById(id).isPresent()){

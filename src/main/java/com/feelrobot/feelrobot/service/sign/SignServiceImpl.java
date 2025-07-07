@@ -203,7 +203,7 @@ public class SignServiceImpl implements SignService {
             String email = extractEmailFromToken(idToken);
 
             if(studentRepository.existsByEmail(email)){
-                String accessToken = jwtTokenProvider.createAccessToken(email);
+                String accessToken = jwtTokenProvider.createKakoToken(email, kakaoResponseDto.getAccess_token());
                 String refreshToken = jwtTokenProvider.createRefreshToken();
 
 
