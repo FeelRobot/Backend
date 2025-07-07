@@ -17,12 +17,16 @@ public class Study {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int studyId;
 
+    private String studyFilePath;
     private String studyFileName;
 
     private String difficulty;
+    private int chatBotId;
+
+    private boolean isDeleted;
 
     @ManyToOne
-    @JoinColumn(name = "chatBotId")
-    private ChatBot chatBotId;
+    @JoinColumn(name = "studentId")
+    private Student student;
 
 }

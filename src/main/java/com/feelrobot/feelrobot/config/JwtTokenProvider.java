@@ -18,7 +18,7 @@ public class JwtTokenProvider {
     public static final String ACCESS = "access";
     public static final String REFRESH = "refresh";
     public static final String TOKEN_TYPE = "tokenType";
-    public static final String TOKEN_HEADER = "Auth-Token";
+    public static final String TOKEN_HEADER = "Authorization";
 
 
     @Value("${jwt.key}")
@@ -59,6 +59,24 @@ public class JwtTokenProvider {
                 .compact();
 
         log.info("[createAccessToken] 액세스 토큰 생성 완료");
+
+        return accessToken;
+    }
+
+    public String createKakoToken(String userId, String kakaoAccessToken) {
+        Claims claims = Jwts.claims().setSubject(userId);
+        Date now = new Date();
+
+        String accessToken = Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + jwtAccessExpiration))
+                .claim("kakaoAccessToken", kakaoAccessToken)
+                .claim(TOKEN_TYPE, ACCESS)
+                .signWith(SignatureAlgorithm.HS256, tokenSecretKey)
+                .compact();
+
+        log.info("[createKakoToken] 카카오 액세스 토큰 생성 완료");
 
         return accessToken;
     }

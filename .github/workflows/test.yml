@@ -32,9 +32,9 @@ jobs:
           echo "${{secrets.APPLICATION_PROPERTIES}}" > src/main/resources/application.properties
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582
 
-      - name: authurization gradlew
+      - name: authorization gradlew
         run: chmod +x gradlew
 
       - name: Build with Gradle Wrapper
